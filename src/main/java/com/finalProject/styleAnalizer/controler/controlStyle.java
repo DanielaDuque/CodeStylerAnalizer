@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
-
 @RestController
 @RequestMapping(value = "/java")
 public class controlStyle {
+
 
     // create GET endpoint to serve demo data at /demo/data
     @GetMapping(value = "/data")
@@ -27,7 +27,9 @@ public class controlStyle {
         String code = pojo.gettext();
         //System.out.println(pojo);
 
-        int numClass = new PreviuosVerifications().NumberofIntClas(code);
+        PreviuosVerifications pv = new PreviuosVerifications();
+
+        int numClass = pv.NumberofIntClas(code);
         List<ErrorStyle> errors = new ArrayList();
 
         if (numClass>pojo.getmaxClassByFile()){
@@ -35,7 +37,16 @@ public class controlStyle {
             errors.add(errorClass);
         }
 
+
+        int numLinesComment = pv.NumberOfCommentLine(code);
+
+        if (numLinesComment>pojo.getmaxLenghtLineComment()){
+            ErrorStyle errorClass = new ErrorStyle("Maximo numero de lineas comentadas superado");
+            errors.add(errorClass);
+        }
         String response = Translate.analyse(code);
+
+
         if (errors.isEmpty()){
             return new ResponseEntity("No hubieron errores", HttpStatus.ACCEPTED);
         }
