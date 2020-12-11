@@ -13,6 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping(value = "/java")
+@CrossOrigin(origins = "*")
 public class controlStyle {
 
 
