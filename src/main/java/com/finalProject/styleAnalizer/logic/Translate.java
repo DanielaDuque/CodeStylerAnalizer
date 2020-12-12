@@ -15,10 +15,12 @@ import org.antlr.v4.runtime.tree.*;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Translate {
-    public static String analyse(String code) {
-        String output ="";
+    public static List<ErrorStyle> analyse(String code) {
+        List<ErrorStyle> errors = new ArrayList<>();
         try {
 
             ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -35,13 +37,14 @@ public class Translate {
             // Crear el objeto correspondiente al analizador sintáctico que se alimenta apartir del buffer de tokens
             javaGrammarParser parser = new javaGrammarParser(tokens);
             ParseTree tree = parser.compilationUnit(); // begin parsing at init rule
+            ParseTreeWalker walker = new ParseTreeWalker();
+            JavaAnalyzer javaAnalyzer = new JavaAnalyzer();
+            walker.walk(javaAnalyzer, tree);
+            errors.addAll(javaAnalyzer.getErrors());
 
-
-            output = tree.toStringTree(parser);
         } catch (Exception e) {
-            System.err.println("Error (Test): " + e);
+            errors.add(new ErrorStyle("Error (Test): " + e.getMessage()));
         }
-
-        return output;
+        return errors;
     }
 }

@@ -25,7 +25,7 @@ public class controlStyle {
 
     @PostMapping("/code-analysis")
     public ResponseEntity postBody(@RequestBody requestPOJO pojo) {
-        String code = pojo.gettext();
+        String code = pojo.getText();
         //System.out.println(pojo);
 
         PreviuosVerifications pv = new PreviuosVerifications();
@@ -33,23 +33,27 @@ public class controlStyle {
         int numClass = pv.NumberofIntClas(code);
         List<ErrorStyle> errors = new ArrayList();
 
-        if (numClass>pojo.getmaxClassByFile()){
-            ErrorStyle errorClass = new ErrorStyle("Maximo numero de clases o interfaces superado");
+        if (numClass > pojo.getMaxClassByFile()) {
+            ErrorStyle errorClass = new ErrorStyle("There are " + numClass + " classes of " + pojo.getMaxClassByFile() + " max");
             errors.add(errorClass);
         }
 
 
         int numLinesComment = pv.NumberOfCommentLine(code);
 
-        if (numLinesComment>pojo.getmaxLenghtLineComment()){
-            ErrorStyle errorClass = new ErrorStyle("Maximo numero de lineas comentadas superado");
+        if (numLinesComment > pojo.getMaxLengthLineComment()) {
+            ErrorStyle errorClass = new ErrorStyle("There are " + numLinesComment + " commented lines of " + pojo.getMaxLengthLineComment() + " max");
             errors.add(errorClass);
         }
-        String response = Translate.analyse(code);
+        if (numLinesComment < pojo.getMinLengthLineComment()) {
+            ErrorStyle errorClass = new ErrorStyle("There are " + numLinesComment + " commented lines of " + pojo.getMinLengthLineComment() + " min");
+            errors.add(errorClass);
+        }
+        List<ErrorStyle> codeErrors = Translate.analyse(code);
+        errors.addAll(codeErrors);
 
-
-        if (errors.isEmpty()){
-            return new ResponseEntity("No hubieron errores", HttpStatus.ACCEPTED);
+        if (errors.isEmpty()) {
+            return new ResponseEntity("Code accepted", HttpStatus.ACCEPTED);
         }
         return new ResponseEntity(errors, HttpStatus.CONFLICT);
     }

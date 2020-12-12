@@ -3,24 +3,23 @@ package com.finalProject.styleAnalizer.pojo;
 public class requestPOJO {
 
     private int complexity;
-    private String prnom;
-    private int maxLenghtName;
-    private int maxLenghtLinesBy;
-    private int maxLenghtLineComment;
+    private int maxLengthName;
+    private int maxLengthLinesBy;
+    private int maxLengthLineComment;
+    private int minLengthLineComment;
     private int maxClassByFile;
-    private int maxNumFuntionByClass;
+    private int maxNumFunctionByClass;
     private String text;
 
     @Override
     public String toString() {
         return "requestPOJO{" +
                 "complexity=" + complexity +
-                ", prnom='" + prnom + '\'' +
-                ", maxLenghtName=" + maxLenghtName +
-                ", maxLenghtLinesBy=" + maxLenghtLinesBy +
-                ", maxLenghtLineComment=" + maxLenghtLineComment +
+                ", maxLengthName=" + maxLengthName +
+                ", maxLengthLinesBy=" + maxLengthLinesBy +
+                ", maxLengthLineComment=" + maxLengthLineComment +
                 ", maxClassByFile=" + maxClassByFile +
-                ", maxNumFuntionByClass=" + maxNumFuntionByClass +
+                ", maxNumFunctionByClass=" + maxNumFunctionByClass +
                 ", text='" + text + '\'' +
                 '}';
     }
@@ -29,31 +28,31 @@ public class requestPOJO {
         return complexity;
     }
 
-    public String getPrnom() {
-        return prnom;
+    public int getMaxLengthName() {
+        return maxLengthName;
     }
 
-    public int getmaxLenghtName() {
-        return maxLenghtName;
+    public int getMaxLengthLinesBy() {
+        return maxLengthLinesBy;
     }
 
-    public int getmaxLenghtLinesBy() {
-        return maxLenghtLinesBy;
+    public int getMaxLengthLineComment() {
+        return maxLengthLineComment;
     }
 
-    public int getmaxLenghtLineComment() {
-        return maxLenghtLineComment;
+    public int getMinLengthLineComment() {
+        return minLengthLineComment;
     }
 
-    public int getmaxClassByFile() {
+    public int getMaxClassByFile() {
         return maxClassByFile;
     }
 
-    public int getmaxNumFuntionByClass() {
-        return maxNumFuntionByClass;
+    public int getMaxNumFunctionByClass() {
+        return maxNumFunctionByClass;
     }
 
-    public String gettext() {
+    public String getText() {
         return text;
     }
 }
