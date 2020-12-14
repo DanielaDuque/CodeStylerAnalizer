@@ -10,7 +10,7 @@ public class EnglishDictionarySingleton {
     static EnglishDictionarySingleton instance;
 
     public static EnglishDictionarySingleton getInstance() {
-        if (instance != null) {
+        if (instance != null && instance.getWords() != null ) {
             return instance;
         }
         try{

@@ -40,7 +40,7 @@ public class Translate {
 
 
         } catch (Exception e) {
-            errors.add(new ErrorStyle("Error (Test): " + e.getMessage()));
+            errors.add(new ErrorStyle("Error (Test): " + e.toString()));
         }
         return errors;
     }

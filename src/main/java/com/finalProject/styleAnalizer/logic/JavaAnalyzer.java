@@ -63,7 +63,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
                         word.append(text.charAt(i));
                     } else {
                         logger.debug(word.toString());
-                        errors.add(new ErrorStyle(error + word.toString() + " has english syntax error", line, column));
+                        errors.add(new ErrorStyle(error + word.toString() + " has an english syntax error", line, column));
                         return;
                     }
                 }
@@ -78,7 +78,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
         if(word.length() > 0){
             if (!dictionarySingleton.checkIfExists(word.toString())) {
                 logger.debug(word.toString());
-                errors.add(new ErrorStyle(error + word.toString() + " has english syntax error", line, column));
+                errors.add(new ErrorStyle(error + word.toString() + " has an english syntax error", line, column));
                 return;
             }
         }
