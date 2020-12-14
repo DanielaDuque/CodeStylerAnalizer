@@ -51,7 +51,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
             }
             if (Character.isUpperCase(text.charAt(i))) {
                 if (word.length() == 0 && words.size() == 0) {
-                    if(!isStruct(identifierType)){
+                    if (!isStruct(identifierType)) {
                         errors.add(new ErrorStyle(error + " has not the correct java style", line, column, true, text, convertToCamel(identifierType, text)));
                         return;
                     }
@@ -75,7 +75,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
                 word.append(text.charAt(i));
             }
         }
-        if(word.length() > 0){
+        if (word.length() > 0) {
             if (!dictionarySingleton.checkIfExists(word.toString())) {
                 logger.debug(word.toString());
                 errors.add(new ErrorStyle(error + " has an english syntax error", line, column));
@@ -90,19 +90,19 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
         for (String word : words) {
             List<String> innerWords = new ArrayList<>();
             StringBuilder currentWord = new StringBuilder();
-            for(int i = 0; i < word.length(); i++){
-                if(Character.isUpperCase(word.charAt(i)) && currentWord.length() > 0){
+            for (int i = 0; i < word.length(); i++) {
+                if (Character.isUpperCase(word.charAt(i)) && currentWord.length() > 0) {
                     innerWords.add(currentWord.toString());
                     currentWord = new StringBuilder();
                     currentWord.append(word.charAt(i));
-                }else{
+                } else {
                     currentWord.append(word.charAt(i));
                 }
             }
-            if(currentWord.length() > 0){
+            if (currentWord.length() > 0) {
                 innerWords.add(currentWord.toString());
             }
-            for(String innerWord: innerWords){
+            for (String innerWord : innerWords) {
                 String lowerWord = innerWord.toLowerCase();
                 for (int i = 0; i < lowerWord.length(); i++) {
                     if (i == 0 && (finalIdentifier.length() > 0 || isStruct(identifierType))) {
@@ -116,7 +116,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
         return finalIdentifier.toString();
     }
 
-    boolean isStruct(String identifierType){
+    boolean isStruct(String identifierType) {
         return identifierType.equals("class") || identifierType.equals("interface") || identifierType.equals("enum") || identifierType.equals("annotation");
     }
 
@@ -427,6 +427,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     @Override
     public void enterConstantDeclarator(javaGrammarParser.ConstantDeclaratorContext ctx) {
         super.enterConstantDeclarator(ctx);
+        checkIdentifier("constant", ctx.IDENTIFIER());
     }
 
     @Override
