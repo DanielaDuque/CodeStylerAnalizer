@@ -36,8 +36,8 @@ public class Translate {
             ParseTreeWalker walker = new ParseTreeWalker();
             JavaAnalyzer javaAnalyzer = new JavaAnalyzer(pojo);
             walker.walk(javaAnalyzer, tree);
+            javaAnalyzer.terminateAnalysis();
             errors.addAll(javaAnalyzer.getErrors());
-
 
         } catch (Exception e) {
             errors.add(new ErrorStyle("Error (Test): " + e.toString()));

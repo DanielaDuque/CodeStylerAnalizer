@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 
 public class JavaAnalyzer extends javaGrammarBaseListener {
     private List<ErrorStyle> errors;
@@ -18,17 +19,31 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     private RequestPOJO pojo;
     private Logger logger = LoggerFactory.getLogger(JavaAnalyzer.class);
 
+    private TreeMap<String, Counter> classesFunctionCount;
+    private String currentClass;
+
     public JavaAnalyzer(RequestPOJO pojo) {
         this.errors = new ArrayList<>();
         this.pojo = pojo;
         this.dictionarySingleton = EnglishDictionarySingleton.getInstance();
+        this.classesFunctionCount = new TreeMap<>();
     }
 
     public List<ErrorStyle> getErrors() {
         return errors;
     }
 
-    void checkIdentifier(String identifierType, TerminalNode identifier) {
+    public void terminateAnalysis() {
+        for (String key : classesFunctionCount.keySet()) {
+            Counter counter = classesFunctionCount.get(key);
+            if (counter.getCount() > pojo.getMaxFunctionCountByClass()) {
+                String error = "The class" + key;
+                errors.add(new ErrorStyle(error + " exceed the max function count constraint, max function count per class " + pojo.getMaxFunctionCountByClass(), counter.getLine(), counter.getColumn()));
+            }
+        }
+    }
+
+    private void checkIdentifier(String identifierType, TerminalNode identifier) {
         String error = "The " + identifierType + " " + identifier;
         String text = identifier.getText();
         int line = identifier.getSymbol().getLine();
@@ -84,7 +99,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
         }
     }
 
-    String convertToCamel(String identifierType, String text) {
+    private String convertToCamel(String identifierType, String text) {
         String[] words = text.split("_");
         StringBuilder finalIdentifier = new StringBuilder();
         for (String word : words) {
@@ -116,7 +131,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
         return finalIdentifier.toString();
     }
 
-    boolean isStruct(String identifierType) {
+    private boolean isStruct(String identifierType) {
         return identifierType.equals("class") || identifierType.equals("interface") || identifierType.equals("enum") || identifierType.equals("annotation");
     }
 
@@ -194,6 +209,8 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     public void enterClassDeclaration(javaGrammarParser.ClassDeclarationContext ctx) {
         super.enterClassDeclaration(ctx);
         checkIdentifier("class", ctx.IDENTIFIER());
+        currentClass = ctx.IDENTIFIER().getText();
+        classesFunctionCount.put(currentClass, new Counter(ctx.IDENTIFIER().getSymbol().getLine(), ctx.IDENTIFIER().getSymbol().getStartIndex(), 0));
     }
 
     @Override
@@ -306,6 +323,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     @Override
     public void enterClassBodyDeclaration(javaGrammarParser.ClassBodyDeclarationContext ctx) {
         super.enterClassBodyDeclaration(ctx);
+
     }
 
     @Override
@@ -327,6 +345,9 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     public void enterMethodDeclaration(javaGrammarParser.MethodDeclarationContext ctx) {
         super.enterMethodDeclaration(ctx);
         checkIdentifier("method", ctx.IDENTIFIER());
+        if (currentClass != null) {
+            classesFunctionCount.get(currentClass).addCount();
+        }
     }
 
     @Override
