@@ -30,7 +30,7 @@ public class EnglishDictionarySingleton {
         ApplicationContext appContext =
                 new ClassPathXmlApplicationContext();
         Resource resource =
-                appContext.getResource("https://firebasestorage.googleapis.com/v0/b/code-style-analyzer.appspot.com/o/dictionary.txt?alt=media&token=f162ee13-87da-4877-b77e-5539a8e744d3");
+                appContext.getResource("https://firebasestorage.googleapis.com/v0/b/code-style-analyzer.appspot.com/o/dictionary.txt?alt=media&token=a0cf5bd5-d337-449c-8085-f2443e78d40d");
         //File file = ResourceUtils.getFile("classpath:dictionary.txt");
         InputStream in = resource.getInputStream();
         BufferedReader input = new BufferedReader(new InputStreamReader(in));

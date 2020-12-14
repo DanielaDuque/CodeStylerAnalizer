@@ -20,6 +20,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     private Logger logger = LoggerFactory.getLogger(JavaAnalyzer.class);
 
     private TreeMap<String, Counter> classesFunctionCount;
+    private TreeMap<String, Measurement> methodMeasurement;
     private String currentClass;
 
     public JavaAnalyzer(RequestPOJO pojo) {
@@ -27,6 +28,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
         this.pojo = pojo;
         this.dictionarySingleton = EnglishDictionarySingleton.getInstance();
         this.classesFunctionCount = new TreeMap<>();
+        this.methodMeasurement = new TreeMap<>();
     }
 
     public List<ErrorStyle> getErrors() {
@@ -34,11 +36,24 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     }
 
     public void terminateAnalysis() {
+        if (classesFunctionCount.size() > pojo.getMaxClassesByFile()) {
+            ErrorStyle errorClass = new ErrorStyle("There are " + classesFunctionCount.size() + " classes and the maximum accepted is " + pojo.getMaxClassesByFile());
+            errors.add(errorClass);
+        }
         for (String key : classesFunctionCount.keySet()) {
             Counter counter = classesFunctionCount.get(key);
             if (counter.getCount() > pojo.getMaxFunctionCountByClass()) {
-                String error = "The class" + key;
+                String error = "The class " + key;
                 errors.add(new ErrorStyle(error + " exceed the max function count constraint, max function count per class " + pojo.getMaxFunctionCountByClass(), counter.getLine(), counter.getColumn()));
+            }
+        }
+
+        for (String key : methodMeasurement.keySet()) {
+            Measurement measurement = methodMeasurement.get(key);
+            if (measurement.getEnd() - measurement.getStart()  > pojo.getMaxLineCountByFunction()) {
+                String functionName = key.split("-")[1];
+                String error = "The function " + functionName;
+                errors.add(new ErrorStyle(error + " exceed the max lines count constraint, max line count per function " + pojo.getMaxLineCountByFunction(), measurement.getLine(), measurement.getColumn()));
             }
         }
     }
@@ -348,6 +363,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
         if (currentClass != null) {
             classesFunctionCount.get(currentClass).addCount();
         }
+        methodMeasurement.put(currentClass + "-" + ctx.IDENTIFIER().getText(), new Measurement(ctx.IDENTIFIER().getSymbol().getLine(), ctx.IDENTIFIER().getSymbol().getStartIndex(), ctx.getStart().getLine(), ctx.getStop().getLine()));
     }
 
     @Override

@@ -23,13 +23,7 @@ public class JavaController {
 
         PreviuosVerifications pv = new PreviuosVerifications();
 
-        int numClass = pv.NumberofIntClas(code);
         List<ErrorStyle> errors = new ArrayList();
-
-        if (numClass > pojo.getMaxClassesByFile()) {
-            ErrorStyle errorClass = new ErrorStyle("There are " + numClass + " classes and the maximum accepted is " + pojo.getMaxClassesByFile());
-            errors.add(errorClass);
-        }
 
         int numLinesComment = pv.NumberOfCommentLine(code);
 
