@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import java.util.TreeMap;
 
 public class JavaAnalyzer extends javaGrammarBaseListener {
@@ -20,15 +21,16 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     private Logger logger = LoggerFactory.getLogger(JavaAnalyzer.class);
 
     private TreeMap<String, Counter> classesFunctionCount;
-    private TreeMap<String, Measurement> methodMeasurement;
+    private TreeMap<String, Stack<Counter>> methodComplexity;
     private String currentClass;
+    private String currentMethod;
 
     public JavaAnalyzer(RequestPOJO pojo) {
         this.errors = new ArrayList<>();
         this.pojo = pojo;
         this.dictionarySingleton = EnglishDictionarySingleton.getInstance();
         this.classesFunctionCount = new TreeMap<>();
-        this.methodMeasurement = new TreeMap<>();
+        this.methodComplexity = new TreeMap<>();
     }
 
     public List<ErrorStyle> getErrors() {
@@ -45,15 +47,6 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
             if (counter.getCount() > pojo.getMaxFunctionCountByClass()) {
                 String error = "The class " + key;
                 errors.add(new ErrorStyle(error + " exceed the max function count constraint, max function count per class " + pojo.getMaxFunctionCountByClass(), counter.getLine(), counter.getColumn()));
-            }
-        }
-
-        for (String key : methodMeasurement.keySet()) {
-            Measurement measurement = methodMeasurement.get(key);
-            if (measurement.getEnd() - measurement.getStart()  > pojo.getMaxLineCountByFunction()) {
-                String functionName = key.split("-")[1];
-                String error = "The function " + functionName;
-                errors.add(new ErrorStyle(error + " exceed the max lines count constraint, max line count per function " + pojo.getMaxLineCountByFunction(), measurement.getLine(), measurement.getColumn()));
             }
         }
     }
@@ -363,12 +356,25 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
         if (currentClass != null) {
             classesFunctionCount.get(currentClass).addCount();
         }
-        methodMeasurement.put(currentClass + "-" + ctx.IDENTIFIER().getText(), new Measurement(ctx.IDENTIFIER().getSymbol().getLine(), ctx.IDENTIFIER().getSymbol().getStartIndex(), ctx.getStart().getLine(), ctx.getStop().getLine()));
+
+        if (ctx.getStop().getLine() - ctx.getStart().getLine() > pojo.getMaxLineCountByFunction()) {
+            String error = "The function " + ctx.IDENTIFIER().getText();
+            errors.add(new ErrorStyle(error + " exceed the max lines count constraint, max line count per function " + pojo.getMaxLineCountByFunction(), ctx.IDENTIFIER().getSymbol().getLine(), ctx.IDENTIFIER().getSymbol().getStartIndex()));
+        }
+        Stack<Counter> counters = new Stack<>();
+        counters.push(new Counter(ctx.IDENTIFIER().getSymbol().getLine(), ctx.IDENTIFIER().getSymbol().getStartIndex(), 0));
+        methodComplexity.put(ctx.IDENTIFIER().getText(), counters);
+        currentMethod = ctx.IDENTIFIER().getText();
     }
 
     @Override
     public void exitMethodDeclaration(javaGrammarParser.MethodDeclarationContext ctx) {
         super.exitMethodDeclaration(ctx);
+        Stack<Counter> counters = methodComplexity.get(currentMethod);
+        Counter counter = counters.pop();
+        if (counter.getCount() > pojo.getComplexity()) {
+            errors.add(new ErrorStyle("The method " + currentMethod + " exceeds the maximum complexity constraint, max complexity " + pojo.getComplexity(), counter.getLine(), counter.getColumn()));
+        }
     }
 
     @Override
@@ -847,11 +853,45 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     @Override
     public void enterStatement(javaGrammarParser.StatementContext ctx) {
         super.enterStatement(ctx);
+        if (currentMethod == null) {
+            return;
+        }
+        Stack<Counter> counters = methodComplexity.get(currentMethod);
+        if (ctx.IF() != null) {
+            counters.peek().addCount();
+            counters.push(new Counter(ctx.IF().getSymbol().getLine(), ctx.IF().getSymbol().getStartIndex(), 0));
+        } else if (ctx.FOR() != null) {
+            counters.peek().addCount();
+            counters.push(new Counter(ctx.FOR().getSymbol().getLine(), ctx.FOR().getSymbol().getStartIndex(), 0));
+        } else if (ctx.DO() != null) {
+            counters.peek().addCount();
+            counters.push(new Counter(ctx.DO().getSymbol().getLine(), ctx.DO().getSymbol().getStartIndex(), 0));
+        } else if (ctx.WHILE() != null) {
+            counters.peek().addCount();
+            counters.push(new Counter(ctx.WHILE().getSymbol().getLine(), ctx.WHILE().getSymbol().getStartIndex(), 0));
+        } else if (ctx.SWITCH() != null) {
+            counters.peek().addCount();
+            counters.push(new Counter(ctx.SWITCH().getSymbol().getLine(), ctx.SWITCH().getSymbol().getStartIndex(), 0));
+        } else if (ctx.TRY() != null) {
+            counters.peek().addCount();
+            counters.push(new Counter(ctx.TRY().getSymbol().getLine(), ctx.TRY().getSymbol().getStartIndex(), 0));
+        }
     }
 
     @Override
     public void exitStatement(javaGrammarParser.StatementContext ctx) {
         super.exitStatement(ctx);
+        if (currentMethod == null) {
+            return;
+        }
+        Stack<Counter> counters = methodComplexity.get(currentMethod);
+        if (ctx.IF() != null || ctx.FOR() != null || ctx.DO() != null || ctx.WHILE() != null || ctx.SWITCH() != null || ctx.TRY() != null) {
+            Counter counter = counters.pop();
+            counters.peek().addCount(counter.getCount());
+            if (counter.getCount() > pojo.getComplexity()) {
+                errors.add(new ErrorStyle("The statement exceeds the maximum complexity constraint, max complexity " + pojo.getComplexity(), counter.getLine(), counter.getColumn()));
+            }
+        }
     }
 
     @Override

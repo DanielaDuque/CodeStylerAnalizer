@@ -35,7 +35,11 @@ public class Counter {
         this.count = count;
     }
 
-    public void addCount(){
+    public void addCount() {
         count++;
+    }
+
+    public void addCount(int count) {
+        this.count += count;
     }
 }
