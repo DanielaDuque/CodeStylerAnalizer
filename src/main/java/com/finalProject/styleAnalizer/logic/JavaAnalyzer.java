@@ -63,7 +63,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
                         word.append(text.charAt(i));
                     } else {
                         logger.debug(word.toString());
-                        errors.add(new ErrorStyle(error + word.toString() + " has an english syntax error", line, column));
+                        errors.add(new ErrorStyle(error + " has an english syntax error", line, column));
                         return;
                     }
                 }
