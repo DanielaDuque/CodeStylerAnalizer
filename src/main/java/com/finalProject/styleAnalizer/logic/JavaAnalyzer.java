@@ -2,9 +2,12 @@ package com.finalProject.styleAnalizer.logic;
 
 import com.finalProject.styleAnalizer.gen.javaGrammarBaseListener;
 import com.finalProject.styleAnalizer.gen.javaGrammarParser;
+import com.finalProject.styleAnalizer.pojo.RequestPOJO;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,46 +15,109 @@ import java.util.List;
 public class JavaAnalyzer extends javaGrammarBaseListener {
     private List<ErrorStyle> errors;
     private EnglishDictionarySingleton dictionarySingleton;
+    private RequestPOJO pojo;
+    private Logger logger = LoggerFactory.getLogger(JavaAnalyzer.class);
 
-    public JavaAnalyzer() {
-        errors = new ArrayList<>();
-        dictionarySingleton = EnglishDictionarySingleton.getInstance();
+    public JavaAnalyzer(RequestPOJO pojo) {
+        this.errors = new ArrayList<>();
+        this.pojo = pojo;
+        this.dictionarySingleton = EnglishDictionarySingleton.getInstance();
     }
 
     public List<ErrorStyle> getErrors() {
         return errors;
     }
 
-    void checkIdentifier(String identifierType, String identifier) {
-        String error = "The " + identifierType + " ";
-        if (identifier.contains("_")) {
-            errors.add(new ErrorStyle(error + identifier + " is not in camel case"));
-        } else {
-            List<String> words = new ArrayList<>();
-            StringBuilder word = new StringBuilder();
-            for (int i = 0; i < identifier.length(); i++) {
-                if (!Character.isAlphabetic(identifier.charAt(i))) {
-                    errors.add(new ErrorStyle(error + identifier + " not contains only letters"));
+    void checkIdentifier(String identifierType, TerminalNode identifier) {
+        String error = "The " + identifierType + " " + identifier;
+        String text = identifier.getText();
+        int line = identifier.getSymbol().getLine();
+        int column = identifier.getSymbol().getStartIndex();
+
+        if (text.length() > pojo.getMaxNameLength()) {
+            errors.add(new ErrorStyle(error + " exceed the max length constraint, max length " + pojo.getMaxNameLength(), line, column));
+            return;
+        }
+        if (text.contains("_")) {
+            errors.add(new ErrorStyle(error + " has not the correct java style", line, column, true, text, convertToCamel(identifierType, text)));
+            return;
+        }
+        List<String> words = new ArrayList<>();
+        StringBuilder word = new StringBuilder();
+        for (int i = 0; i < text.length(); i++) {
+            if (!Character.isAlphabetic(text.charAt(i))) {
+                errors.add(new ErrorStyle(error + " not contains only letters", line, column));
+                return;
+            }
+            if (Character.isUpperCase(text.charAt(i))) {
+                if (word.length() == 0 && words.size() == 0) {
+                    if(!isStruct(identifierType)){
+                        errors.add(new ErrorStyle(error + " has not the correct java style", line, column, true, text, convertToCamel(identifierType, text)));
+                        return;
+                    }
+                    word.append(text.charAt(i));
+                } else {
+                    if (dictionarySingleton.checkIfExists(word.toString())) {
+                        words.add(word.toString());
+                        word = new StringBuilder();
+                        word.append(text.charAt(i));
+                    } else {
+                        logger.debug(word.toString());
+                        errors.add(new ErrorStyle(error + word.toString() + " has english syntax error", line, column));
+                        return;
+                    }
+                }
+            } else {
+                if (word.length() == 0 && words.size() == 0 && isStruct(identifierType)) {
+                    errors.add(new ErrorStyle(error + " has not the correct java style", line, column, true, text, convertToCamel(identifierType, text)));
                     return;
                 }
-                if (Character.isUpperCase(identifier.charAt(i))) {
-                    if (word.length() == 0 && words.size() == 0) {
-                        errors.add(new ErrorStyle(error + identifier + " is not in camel case"));
-                        return;
+                word.append(text.charAt(i));
+            }
+        }
+        if(word.length() > 0){
+            if (!dictionarySingleton.checkIfExists(word.toString())) {
+                logger.debug(word.toString());
+                errors.add(new ErrorStyle(error + word.toString() + " has english syntax error", line, column));
+                return;
+            }
+        }
+    }
+
+    String convertToCamel(String identifierType, String text) {
+        String[] words = text.split("_");
+        StringBuilder finalIdentifier = new StringBuilder();
+        for (String word : words) {
+            List<String> innerWords = new ArrayList<>();
+            StringBuilder currentWord = new StringBuilder();
+            for(int i = 0; i < word.length(); i++){
+                if(Character.isUpperCase(word.charAt(i)) && currentWord.length() > 0){
+                    innerWords.add(currentWord.toString());
+                    currentWord = new StringBuilder();
+                    currentWord.append(word.charAt(i));
+                }else{
+                    currentWord.append(word.charAt(i));
+                }
+            }
+            if(currentWord.length() > 0){
+                innerWords.add(currentWord.toString());
+            }
+            for(String innerWord: innerWords){
+                String lowerWord = innerWord.toLowerCase();
+                for (int i = 0; i < lowerWord.length(); i++) {
+                    if (i == 0 && (finalIdentifier.length() > 0 || isStruct(identifierType))) {
+                        finalIdentifier.append((lowerWord.charAt(i) + "").toUpperCase());
                     } else {
-                        if (dictionarySingleton.checkIfExists(word.toString())) {
-                            words.add(word.toString());
-                            word = new StringBuilder();
-                            word.append(identifier.charAt(i));
-                        } else {
-                            errors.add(new ErrorStyle(error + identifier + " has english syntax error"));
-                        }
+                        finalIdentifier.append(lowerWord.charAt(i));
                     }
-                } else {
-                    word.append(identifier.charAt(i));
                 }
             }
         }
+        return finalIdentifier.toString();
+    }
+
+    boolean isStruct(String identifierType){
+        return identifierType.equals("class") || identifierType.equals("interface") || identifierType.equals("enum") || identifierType.equals("annotation");
     }
 
     @Override
@@ -127,6 +193,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     @Override
     public void enterClassDeclaration(javaGrammarParser.ClassDeclarationContext ctx) {
         super.enterClassDeclaration(ctx);
+        checkIdentifier("class", ctx.IDENTIFIER());
     }
 
     @Override
@@ -167,6 +234,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     @Override
     public void enterEnumDeclaration(javaGrammarParser.EnumDeclarationContext ctx) {
         super.enterEnumDeclaration(ctx);
+        checkIdentifier("enum", ctx.IDENTIFIER());
     }
 
     @Override
@@ -207,6 +275,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     @Override
     public void enterInterfaceDeclaration(javaGrammarParser.InterfaceDeclarationContext ctx) {
         super.enterInterfaceDeclaration(ctx);
+        checkIdentifier("interface", ctx.IDENTIFIER());
     }
 
     @Override
@@ -257,8 +326,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     @Override
     public void enterMethodDeclaration(javaGrammarParser.MethodDeclarationContext ctx) {
         super.enterMethodDeclaration(ctx);
-        String methodName = ctx.IDENTIFIER().getText();
-        checkIdentifier("method", methodName);
+        checkIdentifier("method", ctx.IDENTIFIER());
     }
 
     @Override
@@ -419,8 +487,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     @Override
     public void enterVariableDeclaratorId(javaGrammarParser.VariableDeclaratorIdContext ctx) {
         super.enterVariableDeclaratorId(ctx);
-        String variableName = ctx.IDENTIFIER().getText();
-        checkIdentifier("variable", variableName);
+        checkIdentifier("variable", ctx.IDENTIFIER());
     }
 
     @Override
@@ -621,6 +688,7 @@ public class JavaAnalyzer extends javaGrammarBaseListener {
     @Override
     public void enterAnnotationTypeDeclaration(javaGrammarParser.AnnotationTypeDeclarationContext ctx) {
         super.enterAnnotationTypeDeclaration(ctx);
+        checkIdentifier("annotation", ctx.IDENTIFIER());
     }
 
     @Override

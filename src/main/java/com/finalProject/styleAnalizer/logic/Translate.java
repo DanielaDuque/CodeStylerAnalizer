@@ -9,17 +9,17 @@ package com.finalProject.styleAnalizer.logic; /***
 // import ANTLR's runtime libraries
 import com.finalProject.styleAnalizer.gen.javaGrammarLexer;
 import com.finalProject.styleAnalizer.gen.javaGrammarParser;
+import com.finalProject.styleAnalizer.pojo.RequestPOJO;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Translate {
-    public static List<ErrorStyle> analyse(String code) {
+    public static List<ErrorStyle> analyse(RequestPOJO pojo) {
         List<ErrorStyle> errors = new ArrayList<>();
         try {
 
@@ -27,20 +27,17 @@ public class Translate {
             PrintStream ps = new PrintStream(os);
             System.setOut(ps);
 
-            // crear un analizador léxico que se alimenta a partir de la entrada (archivo  o consola)
             javaGrammarLexer lexer;
-            lexer = new javaGrammarLexer(CharStreams.fromString(code));
+            lexer = new javaGrammarLexer(CharStreams.fromString(pojo.getText()));
 
-
-            // Identificar al analizador léxico como fuente de tokens para el sintactico
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            // Crear el objeto correspondiente al analizador sintáctico que se alimenta apartir del buffer de tokens
             javaGrammarParser parser = new javaGrammarParser(tokens);
-            ParseTree tree = parser.compilationUnit(); // begin parsing at init rule
+            ParseTree tree = parser.compilationUnit();
             ParseTreeWalker walker = new ParseTreeWalker();
-            JavaAnalyzer javaAnalyzer = new JavaAnalyzer();
+            JavaAnalyzer javaAnalyzer = new JavaAnalyzer(pojo);
             walker.walk(javaAnalyzer, tree);
             errors.addAll(javaAnalyzer.getErrors());
+
 
         } catch (Exception e) {
             errors.add(new ErrorStyle("Error (Test): " + e.getMessage()));
