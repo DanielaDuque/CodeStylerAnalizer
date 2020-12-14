@@ -34,7 +34,7 @@ public class JavaController {
         int numLinesComment = pv.NumberOfCommentLine(code);
 
         if (numLinesComment > pojo.getMaxCommentedLinesCount()) {
-            ErrorStyle errorClass = new ErrorStyle("There are " + numLinesComment + " commented lines and the maximum accepted is " + pojo.getMaxClassesByFile());
+            ErrorStyle errorClass = new ErrorStyle("There are " + numLinesComment + " commented lines and the maximum accepted is " + pojo.getMaxCommentedLinesCount());
             errors.add(errorClass);
         }
         if (numLinesComment < pojo.getMinCommentedLinesCount()) {
